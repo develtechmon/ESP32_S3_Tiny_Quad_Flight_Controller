@@ -36,10 +36,10 @@ void readReceiver(int* channelValues) {
 
 // ***** Motor Driver PWM Setup *****
 // Define motor PWM output pins (choose pins not used by PPM input)
-const int motor1Pin = 25;
-const int motor2Pin = 26;
-const int motor3Pin = 27;
-const int motor4Pin = 32;
+const int motor1Pin = 11;
+const int motor2Pin = 10;
+const int motor3Pin = 9;
+const int motor4Pin = 8;
 
 // PWM parameters
 const int pwmFrequency = 20000; // 20 kHz PWM frequency

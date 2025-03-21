@@ -180,12 +180,19 @@ void setup() {
   ledcWrite(motor4Channel, 0);
 
   // ----- Calibration Values -----
-  RateCalibrationRoll=-4.74;
-  RateCalibrationPitch=0.79;
-  RateCalibrationYaw=-0.88;
-  AccXCalibration=0.04;
+  // RateCalibrationRoll=-4.74;
+  // RateCalibrationPitch=0.79;
+  // RateCalibrationYaw=-0.88;
+  // AccXCalibration=0.04;
+  // AccYCalibration=0.01;
+  // AccZCalibration=0.07;
+
+  RateCalibrationRoll=2.57;
+  RateCalibrationPitch=-1.71;
+  RateCalibrationYaw=-1.57;
+  AccXCalibration=0.03;
   AccYCalibration=0.01;
-  AccZCalibration=0.07;
+  AccZCalibration=0.11;
 
   // battery_voltage();
 
@@ -207,7 +214,7 @@ void setup() {
   // Green
   strip.setPixelColor(0, strip.Color(0, 255, 0));
   strip.show();
-  delay(500);
+  delay(1000);
 
   strip.setPixelColor(0, strip.Color(0, 0, 0));
   strip.show();

@@ -111,13 +111,16 @@ void read_receiver(int *channelValues) {
 }
 
 // Kalman filter
-void kalman_1d(float &KalmanState, float &KalmanUncertainty, float KalmanInput, float KalmanMeasurement) {
-  KalmanState += t * KalmanInput;
-  KalmanUncertainty += t * t * 4 * 4;
-  float KalmanGain = KalmanUncertainty / (KalmanUncertainty + 3 * 3);
-  KalmanState += KalmanGain * (KalmanMeasurement - KalmanState);
+void kalman_1d(float KalmanState, float KalmanUncertainty, float KalmanInput, float KalmanMeasurement) {
+  KalmanState = KalmanState + (t * KalmanInput);
+  KalmanUncertainty = KalmanUncertainty + (t * t * 4 * 4); // IMU variance (4 deg/s)
+  float KalmanGain = KalmanUncertainty / (KalmanUncertainty + 3 * 3); // error variance (3 deg)
+  KalmanState = KalmanState + KalmanGain * (KalmanMeasurement - KalmanState);
   KalmanUncertainty = (1 - KalmanGain) * KalmanUncertainty;
+  Kalman1DOutput[0] = KalmanState; 
+  Kalman1DOutput[1] = KalmanUncertainty;
 }
+
 
 // Sensor reading task with low-pass filter
 void sensorTask(void *pvParameters) {
@@ -205,7 +208,7 @@ void loop() {
   read_receiver(channelValues);
 
   // Altitude hold logic
-  if (channelValues[4] > 1500) {
+  if (channelValues[5] > 1500) {
     if (!altitude_hold_active) {
       altitude_hold_active = true;
       xSemaphoreTake(altitude_mutex, portMAX_DELAY);

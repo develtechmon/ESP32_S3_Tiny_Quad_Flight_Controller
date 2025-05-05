@@ -16,6 +16,18 @@ This is repository for ESP32-S3 Super Mini Tiny Quad Flight Controller Drone
 | DJI Tello Propeller                                                                          | 4            |
 | VL53L0X V2 TOF                                                                               | 1            |
 
+## How to run 
+
+Please ensure you've calibrated your MPU6050 1st. This calibrated value can be found by running MPU6050 calibration
+program below and copy the calibrated value into flight controller calibrated value section
+```
+ESP32_S3_Tiny_Quad_gyro_accelerometer_calibration
+```
+For Angle and manual control, please upload below flight controller code to your ESP32-S3
+```
+ESP32_S3_Tiny_Quad_anglemode_kalman_filter_pid_arm_disarm_logic
+```
+
 For Altitude Hold, please upload below flight controller code to your ESP32-S3
 ```
 ESP32_S3_Tiny_Quad_anglemode_kalman_filter_pid_arm_disarm_logic_alt_hold_v1

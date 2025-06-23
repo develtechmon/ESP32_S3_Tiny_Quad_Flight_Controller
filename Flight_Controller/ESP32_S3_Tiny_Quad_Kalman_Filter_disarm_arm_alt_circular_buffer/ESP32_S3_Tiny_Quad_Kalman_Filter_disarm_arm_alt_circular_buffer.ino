@@ -74,6 +74,10 @@ VL53L0X distanceSensor;
 bool altitudeHoldActive = false;
 int baselineThrottle = 1500;
 
+// Target management (FIXED!)
+float altitudeTarget = 0;
+bool targetSet = false;
+
 // Reference filtering variables (21-point circular buffer)
 int16_t altitudeBuffer[21];  // Stores last 21 readings
 int bufferIndex = 0;         // Current position in buffer
@@ -82,9 +86,9 @@ float groundReference = 0;   // What "ground level" looks like
 float filteredAltitude = 0;  // Final smooth altitude value
 
 // Altitude PID variables (using proven gains)
-float altP = 0.6;        // Proportional gain
-float altI = 0.8;        // Integral gain  
-float altD = 5.0;        // Derivative gain
+float altP = 0.3;        // Proportional gain
+float altI = 0.05;        // Integral gain  
+float altD = 0.15;        // Derivative gain
 float altIntegral = 0;   // Integral accumulator
 float altPrevError = 0;  // Previous error for derivative
 float altOutput = 0;     // PID output
@@ -298,6 +302,7 @@ void loop() {
   if (!altHoldSwitch && altitudeHoldActive) {
     altitudeHoldActive = false;
     altOutput = 0;
+    targetSet = false;  // Reset target for next activation
     Serial.println("🔓 Altitude Hold OFF");
   }
   
@@ -312,10 +317,15 @@ void loop() {
     
     // Remember current throttle and altitude
     baselineThrottle = channelValues[2];
-    float currentAltitudeTarget = filteredAltitude; // Lock current altitude as target
+
+    // Set target to current altitude (FIXED!)
+    altitudeTarget = filteredAltitude;
+    targetSet = true;
+
+    // float currentAltitudeTarget = filteredAltitude; // Lock current altitude as target
     
     Serial.print("🔒 Altitude Hold ON - Target: ");
-    Serial.print(currentAltitudeTarget * 10);
+    Serial.print(altitudeTarget * 10);
     Serial.print("cm, Throttle: ");
     Serial.println(baselineThrottle);
   }
@@ -430,57 +440,57 @@ void loop() {
   DesiredAnglePitch = 0.1 * (channelValues[1] - 1500);
   
   // ===== ALTITUDE HOLD PID CALCULATION =====
-  if (altitudeHoldActive) {
-    // We need to define a target to compare against
-    static float altitudeTarget = 0;
-    
-    // On first activation, set target to current altitude
-    static bool targetSet = false;
-    if (!targetSet) {
-      altitudeTarget = filteredAltitude;
-      targetSet = true;
+
+  if (altitudeHoldActive && targetSet) {
+      // Calculate error
+      float altError = altitudeTarget - filteredAltitude;
+      
+      // ADD DEADBAND - ignore small errors (prevents jitter)
+      if (abs(altError) < 0.02) {  // 2cm deadband
+        altError = 0;
+      }
+      
+      // P term
+      float pTerm = altP * altError;
+      
+      // I term with windup protection
+      altIntegral += altI * altError * t;
+      altIntegral = constrain(altIntegral, -200, 200);
+      
+      // D term
+      float dTerm = altD * (altError - altPrevError) / t;
+      
+      // Combine PID terms
+      altOutput = pTerm + altIntegral + dTerm;
+      altOutput = constrain(altOutput, -200, 200);
+      
+      // Update for next loop
+      altPrevError = altError;
+      
+      // Apply altitude correction to throttle
+      InputThrottle = baselineThrottle + altOutput;
+      
+      // Allow pilot to adjust target altitude with stick
+      float stickInput = channelValues[2] - baselineThrottle;
+      if (abs(stickInput) > 50) {
+        baselineThrottle = channelValues[2];
+        // Optional: adjust target slightly
+        // altitudeTarget += stickInput * 0.0001;
+      }
+      
+      // DEBUG: Uncomment to see what's happening
+      // Serial.print("Tgt:"); Serial.print(altitudeTarget * 10);
+      // Serial.print(" Cur:"); Serial.print(filteredAltitude * 10);
+      // Serial.print(" Err:"); Serial.print(altError * 10);
+      // Serial.print(" Out:"); Serial.print(altOutput);
+      // Serial.print(" Thr:"); Serial.println(InputThrottle);
+      
+    } else {
+      // Normal throttle control
+      InputThrottle = channelValues[2];
+      altOutput = 0;
     }
-    
-    // Reset target flag when altitude hold is turned off
-    if (!altitudeHoldActive) {
-      targetSet = false;
-    }
-    
-    // Calculate error
-    float altError = altitudeTarget - filteredAltitude;
-    
-    // P term
-    float pTerm = altP * altError;
-    
-    // I term with windup protection
-    altIntegral += altI * altError * t;
-    altIntegral = constrain(altIntegral, -200, 200);
-    
-    // D term
-    float dTerm = altD * (altError - altPrevError) / t;
-    
-    // Combine PID terms
-    altOutput = pTerm + altIntegral + dTerm;
-    altOutput = constrain(altOutput, -200, 200);
-    
-    // Update for next loop
-    altPrevError = altError;
-    
-    // Apply altitude correction to throttle
-    InputThrottle = baselineThrottle + altOutput;
-    
-    // Allow pilot to adjust target altitude with stick
-    float stickInput = channelValues[2] - baselineThrottle;
-    if (abs(stickInput) > 50) {
-      baselineThrottle = channelValues[2];
-      // Optionally adjust target: altitudeTarget += stickInput * 0.001;
-    }
-  } else {
-    // Normal throttle control
-    InputThrottle = channelValues[2];
-    altOutput = 0;
-  }
-  
+
   DesiredRateYaw = 0.15 * (channelValues[3] - 1500);
 
   // ===== ANGLE PID FOR ROLL =====

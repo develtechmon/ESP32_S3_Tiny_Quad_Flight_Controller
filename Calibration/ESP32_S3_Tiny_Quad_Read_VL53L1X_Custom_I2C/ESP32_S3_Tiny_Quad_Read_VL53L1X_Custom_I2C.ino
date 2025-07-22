@@ -1,8 +1,8 @@
 #include <Wire.h>
 #include "Adafruit_VL53L1X.h"
 
-#define CUSTOM_SDA_PIN 3
-#define CUSTOM_SCL_PIN 4
+#define CUSTOM_SDA_PIN 4
+#define CUSTOM_SCL_PIN 5
 
 // Use the default constructor (we are not specifying XSHUT/IRQ pins here)
 Adafruit_VL53L1X vl53 = Adafruit_VL53L1X();
